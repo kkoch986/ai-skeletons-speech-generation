@@ -1,0 +1,69 @@
+{
+  "name": "viseme-generator",
+  "type": "HTTP",
+  "path": "Custom",
+
+  "version": "0.0.1",
+  "description": "a module that can process audio into visemes which can be used to control moving heads",
+
+  "hasInput": true,
+
+  "parameters": {
+    "visemeLevels": {
+      "type": "Target"
+    }
+  },
+
+  "scripts": [ "moduleScript.js" ],
+  "hideDefaultParameters": [
+    "autoAdd", "protocol"
+  ],
+  "defaults": {
+    "autoAdd":false,
+    "baseAddress": "http://localhost:5000",
+    "protocol": "json"
+  },
+
+  "commands": {
+    "generate": {
+      "menu": "",
+      "callback": "cmdGenerate",
+      "parameters": {
+        "name": {
+          "type": "String",
+          "description": "a name to identify this generation in the UI and filesystem",
+          "default": "test-voice-generation"
+        },
+        "voiceName": {
+          "type": "Enum",
+          "options": {
+            "Gomez Test": "gomez-test"
+          },
+          "default": "gomez-test"
+        },
+        "emitRatio": {
+          "type": "Float",
+          "description": "the emit ratio for the phoneme model. Higher value means more phonemes",
+          "default": 0.7
+        },
+        "text": {
+          "type": "String",
+          "description": "the text to speak"
+        }
+      }
+    },
+    "import": {
+      "menu": "",
+      "callback": "cmdImport",
+      "parameters": {
+        "title": {
+          "type": "String",
+          "default": "voice"
+        },
+        "metadataFile": {
+          "type": "File"
+        }
+      }
+    }
+  }
+}
