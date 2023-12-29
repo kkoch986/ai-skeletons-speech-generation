@@ -1,0 +1,8 @@
+version: '3'
+services:
+  api:
+    image: kkoch986/ai-skeletons-speech-generation:latest
+    ports:
+      - "3001:5000"
+    environment:
+      ELEVENLABS_TOKEN: "${ELEVENLABS_TOKEN}"

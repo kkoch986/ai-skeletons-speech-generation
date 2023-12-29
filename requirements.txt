@@ -1,0 +1,13 @@
+scipy
+numpy
+resampy
+panphon
+torch
+editdistance
+requests
+tqdm
+allosaurus
+elevenlabs
+Flask
+tabulate
+pydub

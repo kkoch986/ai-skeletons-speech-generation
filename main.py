@@ -49,7 +49,7 @@ def api(args = [], parent=subparsers):
     print("loading phonemes model...")
     model = read_recognizer('eng2102')
 
-    @api.route('/test', methods=['POST'])
+    @api.route('/last', methods=['POST'])
     def test():
         time.sleep(2)
         with open('last.json', 'r') as openfile:
@@ -82,7 +82,7 @@ def api(args = [], parent=subparsers):
             json.dump(metadata, outfile)
         return json.dumps(metadata)
 
-    api.run()
+    api.run(host='0.0.0.0')
 
 #############################################
 # listVoices will just print a table of the available voices
