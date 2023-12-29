@@ -15,7 +15,7 @@ API token on your environment as `ELEVENLABS_TOKEN`.
 
 ## Starting the Server
 
-You can run the server with `./eleven.py api` and make a request like this:
+You can run the server with `./main.py api` and make a request like this:
 
 ```bash
 curl -L http://127.0.0.1:5000/generate \
@@ -56,9 +56,18 @@ The results are an array containing the timestamp (in seconds)
 and the viseme symbol based on
 [this table](https://docs.aws.amazon.com/polly/latest/dg/ph-table-english-us.html).
 
+The audio can be decoded by reversing the encoding:
+
+```bash
+jq -r '.audio' test.json \
+  | xxd -r -p \
+  | base64 -d \
+> test-1-decoded.mp3
+```
+
 
 ## Running Manually
 
-You can also use the tool for generation without standing up the api using `./eleven.py generateFull`
+You can also use the tool for generation without standing up the api using `./main.py generateFull`
 
-See the options [here](https://github.com/kkoch986/ai-skeletons-phoneme-generation/blob/f693fd4a6e014b5e30a526a5c8603d280ff22b77/eleven.py#L108-L113).
+See the options [here](https://github.com/kkoch986/ai-skeletons-phoneme-generation/blob/main/main.py#L108-L113).
