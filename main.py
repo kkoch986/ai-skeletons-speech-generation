@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 from allosaurus.app import read_recognizer
-from elevenlabs import generate, save, set_api_key, voices
+from elevenlabs import voices
 from os import path
-from pydub import AudioSegment
 import csv
 import json
 import os
@@ -13,6 +12,7 @@ import base64
 from tabulate import tabulate
 from flask import Flask, json, request, abort
 from urllib.parse import parse_qs
+from audio.generator import ElevenLabsGenerator, FestivalGenerator
 
 cli = argparse.ArgumentParser(
         prog='SkeletonSpeechGenerator',
@@ -32,13 +32,20 @@ def subcommand(args=[], parent=subparsers):
         parser.set_defaults(func=func)
     return decorator
 
+@subcommand()
+def festivaltest(args = [], parent=subparsers):
+    f = FestivalGenerator()
+    f.generate("test", "", "this is a test")
+
 #############################################
 # api will start up an API server which can
 # be used to generate metadatas
 ############################################
 @subcommand()
 def api(args = [], parent=subparsers):
-    set_api_key(os.environ.get("ELEVENLABS_TOKEN"))
+    # TODO: make a way to indicate which generator to use for each request
+    elevenLabsGenerator = ElevenLabsGenerator(os.environ.get("ELEVENLABS_TOKEN"))
+    festivalGenerator = FestivalGenerator()
     api = Flask(__name__)
 
     # create a map of the allophones to phonemes
@@ -70,14 +77,19 @@ def api(args = [], parent=subparsers):
             print("no text provided, aborting")
             abort(400)
 
-        if voiceID == None:
-            voiceID = findVoice(voiceName)
-            if voiceID == None:
-                print("\nUnable to locate voice for " + voiceName + "\n")
-                abort(500)
-
         # generate and return the audio and metadata
-        metadata = generateInternal(text, voiceID, voiceName, phonemeMap, model, outputName, emitRatio)
+        # TODO: parameterize which model to use
+        metadata = generateInternal(
+            # elevenLabsGenerator,
+            festivalGenerator,
+            text,
+            voiceID,
+            voiceName,
+            phonemeMap,
+            model,
+            outputName,
+            emitRatio
+        )
         with open("last.json", "w") as outfile:
             json.dump(metadata, outfile)
         return json.dumps(metadata)
@@ -113,7 +125,7 @@ def listVoices(args = [], parent=subparsers):
     argument("--emit-ratio", "-e", help="The emit value to pass to allosaurus, increasing means more phonemes will be generated", type=float, default=0.7),
 ])
 def generateFull(args = [], parent=subparsers):
-    set_api_key(os.environ.get("ELEVENLABS_TOKEN"))
+    elevenLabsGenerator = ElevenLabsGenerator(os.environ.get("ELEVENLABS_TOKEN"))
     text = args.text
     voiceID = args.voice_id
     voiceName = args.voice_name
@@ -125,13 +137,6 @@ def generateFull(args = [], parent=subparsers):
         print("no text provided, aborting")
         exit(1);
 
-    if voiceID == None:
-        print("locating voice ID...")
-        voiceID = findVoice(voiceName)
-        if voiceID == None:
-            print("\nUnable to locate voice for " + voiceName + "\n")
-            exit(1);
-
     # create a map of the allophones to phonemes
     print("loading phonemes mappings...")
     alloToPhoneme = alloToPhoneme()
@@ -141,7 +146,16 @@ def generateFull(args = [], parent=subparsers):
     model = read_recognizer('eng2102')
 
     # generate and return the audio and metadata
-    metadata = generateInternal(text, voiceID, voiceName, alloToPhoneme, model, outputName, emitRatio)
+    metadata = generateInternal(
+        elevenLabsGenerator,
+        text,
+        voiceID,
+        voiceName,
+        alloToPhoneme,
+        model,
+        outputName,
+        emitRatio
+    )
 
     data = json.dumps(metadata, sort_keys=True, indent=4)
     f = open(metadataFile, "w")
@@ -149,17 +163,19 @@ def generateFull(args = [], parent=subparsers):
     f.close()
 
 # abstract the core generation logic to this function to be leveraged by the api or cli
-def generateInternal(text, voiceID, voiceName, alloToPhoneme, model, outputName = "out", emitRatio = 0.7):
+def generateInternal(generator, text, voiceID, voiceName, alloToPhoneme, model, outputName = "out", emitRatio = 0.7):
     mp3File = outputName + ".mp3"
     wavFile = outputName + ".wav"
 
-    print("generating speech audio using Voice ID `" + voiceID + "`...")
-    audio = generate(text=text, voice=voiceID)
-    save(audio, mp3File)
+    ## find the voice id from the voice names
+    if voiceID == None:
+        print("locating voice ID...")
+        voiceID = generator.getVoiceID(voiceName)
+        if voiceID == None:
+            raise ValueException("unable to locate voice " + voiceID)
 
-    print("converting to wav file...")
-    sound = AudioSegment.from_mp3(mp3File)
-    sound.export(wavFile, format="wav", parameters=["-acodec", "pcm_s16le", "-ac", "1", "-ar", "16000"])
+    print("generating speech audio using Voice ID `" + voiceID + "`...")
+    duration = generator.generate(outputName, voiceID, text)
 
     print("running phoneme model...")
     r = model.recognize(wavFile, timestamp=True, lang_id='eng', topk=1, emit=emitRatio)
@@ -187,7 +203,7 @@ def generateInternal(text, voiceID, voiceName, alloToPhoneme, model, outputName 
     metadata["mp3File"] = os.getcwd() + "/" + mp3File
     metadata["emitRatio"] = emitRatio
     metadata["results"] = results
-    metadata["audioLength"] = sound.duration_seconds
+    metadata["audioLength"] = duration
     metadata["audio"] = base64Audio
     return metadata
 

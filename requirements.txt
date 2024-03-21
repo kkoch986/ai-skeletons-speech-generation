@@ -11,3 +11,4 @@ elevenlabs
 Flask
 tabulate
 pydub
+pyfestival
