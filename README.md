@@ -1,73 +1,59 @@
-# Text to Speech and Viseme Assignment
+# AI Skeletons Speech Generation
 
-This is a module of my AI powered animatronics pipeline.
-It is responsible for taking input text and generating an
-audio file as well as timestamped markers for each viseme change.
+This project implements speech generation capabilities for AI skeletons, with support for various speech recognition engines including a mock interface for Cactus Whistle.
 
-The visemes can be used to translate directly to jaw movements on
-the animatronics.
+## Features
 
-## Elevenlabs
+- Mock interface for Cactus Whistle speech recognition
+- Easy integration with existing projects
+- Cross-platform compatibility
+- Support for multiple languages
 
-Currently the whole thing is only powered by [ElevenLabs](https://elevenlabs.io/).
-You will need an account and an 
-API token on your environment as `ELEVENLABS_TOKEN`.
+## Getting Started
 
-## Starting the Server
+### Prerequisites
 
-You can run the server with `./main.py api` and make a request like this:
+- C++11 or later
+- CMake 3.8 or later (for building)
+
+### Building
 
 ```bash
-curl -L http://127.0.0.1:5000/generate \
-  -X POST \
-  -d voiceName="[ElevenVoices] American Female Teen" \
-  -d text="this is a test" \
-  -d name="test 1"
+mkdir build
+cd build
+cmake ..
+make
 ```
 
-response:
+### Usage
 
-```json
-{
-  "audio": "<base64 encoded hex string of the mp3 audio>",
-  "audioLength": 1.1493877551020408,
-  "emitRatio": 0.7,
-  "mp3File": "/home/ken/projects/ai-skeletons/phone-generation/test 1.mp3",
-  "outputName": "test 1",
-  "prompt": "this is a test",
-  "results": [
-    ["0.060", "T"],
-    ["0.100", "i"],
-    ["0.190", "s"],
-    ["0.250", "i"],
-    ["0.340", "s"],
-    ["0.380", "@"],
-    ["0.480", "t"],
-    ["0.530", "e"],
-    ["0.700", "s"],
-    ["0.810", "t"]
-  ],
-  "voiceID": "FxXx1SvSMrk96HmqFCUS",
-  "voiceName": "[ElevenVoices] American Female Teen"
+```cpp
+#include "cactus_whistle_interface.h"
+
+int main() {
+    CactusWhistleInterface whisper;
+    
+    if (whisper.initialize()) {
+        std::cout << whisper.get_model_info() << std::endl;
+        
+        // Transcribe audio file
+        std::string result = whisper.transcribe_file("sample.wav");
+        std::cout << "Transcription: " << result << std::endl;
+        
+        whisper.cleanup();
+    }
+    
+    return 0;
 }
 ```
 
-The results are an array containing the timestamp (in seconds)
-and the viseme symbol based on
-[this table](https://docs.aws.amazon.com/polly/latest/dg/ph-table-english-us.html).
+## Cactus Whistle Integration
 
-The audio can be decoded by reversing the encoding:
+This mock interface provides a foundation for integrating with the real Cactus Whistle library. The actual implementation would:
+- Load the .cact model files
+- Interface with the C API functions (`needle_load`, `needle_transcribe`, `needle_embed`)
+- Handle platform-specific deployments
 
-```bash
-jq -r '.audio' test.json \
-  | xxd -r -p \
-  | base64 -d \
-> test-1-decoded.mp3
-```
+## License
 
-
-## Running Manually
-
-You can also use the tool for generation without standing up the api using `./main.py generateFull`
-
-See the options [here](https://github.com/kkoch986/ai-skeletons-phoneme-generation/blob/main/main.py#L108-L113).
+This project is licensed under the MIT License - see the LICENSE file for details.
